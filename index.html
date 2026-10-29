@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Caring Socratic English Tutor - Beginner Level</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { background: #0c0f1d; color: #e2e8f0; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 16px; }
+    
+    #app-layout {
+      display: flex; gap: 16px; width: 100%; max-width: 950px; height: 620px;
+    }
+
+    /* Media Side Panel */
+    #media-panel {
+      width: 250px; background: #151c2e; border: 2px solid #2e3b5e; border-radius: 12px;
+      padding: 16px; display: flex; flex-direction: column; align-items: center; gap: 10px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    }
+    #webcam-view {
+      width: 100%; height: 170px; background: #0c0f1d; border: 2px dashed #475569;
+      border-radius: 8px; object-fit: cover;
+    }
+    .media-btn {
+      width: 100%; padding: 10px; font-size: 13px; font-weight: bold; border-radius: 6px;
+      border: 1px solid #475569; background: #2e3b5e; color: #f8fafc; cursor: pointer; transition: 0.2s;
+    }
+    .media-btn:hover { background: #38bdf8; color: #0c0f1d; }
+
+    /* Tutor Chat Panel */
+    #tutor-container {
+      flex: 1; background: #151c2e; border: 2px solid #2e3b5e; border-radius: 12px;
+      display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    }
+
+    #tutor-header {
+      padding: 14px 20px; background: #1e293b; border-bottom: 2px solid #2e3b5e;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    #tutor-title { font-size: 17px; font-weight: bold; color: #38bdf8; }
+    #tutor-stats { font-size: 14px; color: #94a3b8; font-weight: 600; }
+    .stat-val { color: #f59e0b; font-weight: bold; }
+
+    #chat-box {
+      flex: 1; padding: 20px; overflow-y: auto; display: flex;
+      flex-direction: column; gap: 14px; background: #0c0f1d;
+    }
+
+    .msg { max-width: 85%; padding: 12px 16px; border-radius: 10px; font-size: 15px; line-height: 1.5; }
+    .bot-msg { background: #1e293b; color: #f8fafc; border: 1px solid #2e3b5e; align-self: flex-start; border-bottom-left-radius: 2px; }
+    .user-msg { background: #0284c7; color: #ffffff; align-self: flex-end; border-bottom-right-radius: 2px; }
+
+    #input-area {
+      padding: 14px 20px; background: #1e293b; border-top: 2px solid #2e3b5e;
+      display: flex; gap: 10px; align-items: center;
+    }
+    #user-input {
+      flex: 1; padding: 12px; font-size: 15px; border: 2px solid #475569;
+      background: #151c2e; color: #f8fafc; border-radius: 8px; outline: none;
+    }
+    #user-input:focus { border-color: #38bdf8; }
+    
+    button {
+      background: #0284c7; color: #ffffff; font-weight: 600; border: none;
+      padding: 10px 18px; font-size: 14px; cursor: pointer; border-radius: 8px;
+      transition: background 0.2s;
+    }
+    button:hover { background: #0369a1; }
+
+    #mic-btn { background: #d97706; border: 1px solid #f59e0b; }
+    #mic-btn.listening { background: #ef4444; border-color: #f87171; animation: pulse 1s infinite; }
+
+    @keyframes pulse {
+      0% { opacity: 1; }
+      50% { opacity: 0.6; }
+      100% { opacity: 1; }
+    }
+
+    .report-card {
+      background: #151c2e; border: 2px solid #38bdf8; border-radius: 10px;
+      padding: 24px; text-align: center; margin: auto; width: 90%; color: #f8fafc;
+    }
+    .report-card h2 { color: #38bdf8; margin-bottom: 12px; }
+    .grade-badge { font-size: 52px; font-weight: bold; color: #f59e0b; margin: 12px 0; }
+  </style>
+</head>
+<body>
+
+<div id="app-layout">
+  <!-- Webcam / Control Panel -->
+  <div id="media-panel">
+    <video id="webcam-view" autoplay playsinline muted></video>
+    <button class="media-btn" id="cam-btn" onclick="toggleWebcam()">📷 START WEBCAM</button>
+    <button class="media-btn" id="tts-btn" onclick="toggleTTS()">🔊 TUTOR VOICE: ON</button>
+    <div style="font-size: 12px; color: #94a3b8; text-align: center; margin-top: auto; line-height: 1.4;">
+      😊 <b>Friendly Tutor:</b> Just talk to me in simple English! Press 🎤 to speak.
+    </div>
+  </div>
+
+  <!-- Socratic Tutor Panel -->
+  <div id="tutor-container">
+    <div id="tutor-header">
+      <div id="tutor-title">🤝 Friendly English Tutor</div>
+      <div id="tutor-stats">Topic: <span id="q-idx" class="stat-val">1</span>/<span id="q-total" class="stat-val">0</span> | Stars: <span id="score-val" class="stat-val">0</span></div>
+    </div>
+
+    <div id="chat-box"></div>
+
+    <div id="input-area">
+      <button id="mic-btn" onclick="toggleSpeechRecognition()">🎤 SPEAK</button>
+      <input type="text" id="user-input" placeholder="Say something to your tutor..." autocomplete="off">
+      <button id="send-btn" onclick="handleUserReply()">SEND</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Friendly, Caring Dialogue Scenarios Tailored for Taiwanese Grade 7 Beginners
+  const FRIENDLY_LESSONS = [
+    {
+      topic: "Greeting & Feelings",
+      question: "Hello there! 👋 How are you feeling today? Are you happy, tired, or hungry?",
+      coreKeywords: ["happy", "tired", "hungry", "good", "fine", "ok", "great", "sad", "sleepy"],
+      followUpHint: "It's okay! You can say: 'I am happy' or 'I am tired'. How do you feel?",
+      explanation: "I hear you! It's great to share how you feel. Thank you for telling me! 😊"
+    },
+    {
+      topic: "Polite Request (Needs)",
+      question: "Imagine you are thirsty in class and want some water. How can you ask politely? (Hint: Use 'Please...')",
+      coreKeywords: ["please", "water", "drink", "give", "can", "may"],
+      followUpHint: "Try saying: 'Please give me water' or 'Water, please!'. Can you try?",
+      explanation: "Awesome! Adding 'Please' is super polite when you ask for something you need! 👍"
+    },
+    {
+      topic: "Food Suggestion (Let's)",
+      question: "You and your friend are hungry after school. How do you suggest eating something together? (Hint: Start with 'Let's eat...')",
+      coreKeywords: ["let's", "lets", "eat", "food", "boba", "tea", "bento", "rice", "noodle"],
+      followUpHint: "Try starting with 'Let's eat...' like 'Let's eat bento!' or 'Let's drink boba!'.",
+      explanation: "Yum! 'Let's eat...' is a great way to make fun plans with your friends!"
+    },
+    {
+      topic: "Classroom Rule / Care",
+      question: "Your classmate is running too fast in the classroom and might fall! What kind warning can you tell them? (Hint: 'Don't...')",
+      coreKeywords: ["don't", "dont", "run", "careful", "stop", "be careful"],
+      followUpHint: "You can say: 'Don't run!' or 'Be careful!'. What would you tell them?",
+      explanation: "Good job caring for your classmate! Telling them 'Don't run' or 'Be careful' keeps everyone safe! ❤️"
+    }
+  ];
+
+  let currentIdx = 0;
+  let score = 0;
+  let attemptsOnCurrent = 0;
+  let ttsEnabled = true;
+  let recognition = null;
+  let isListening = false;
+  let webcamStream = null;
+
+  const chatBox = document.getElementById("chat-box");
+  const userInput = document.getElementById("user-input");
+  const micBtn = document.getElementById("mic-btn");
+
+  document.getElementById("q-total").textContent = FRIENDLY_LESSONS.length;
+
+  // Web Speech Recognition
+  if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.lang = 'en-US';
+
+    recognition.onstart = function() {
+      isListening = true;
+      micBtn.classList.add("listening");
+      micBtn.textContent = "🎙️ LISTENING...";
+    };
+
+    recognition.onresult = function(event) {
+      const transcript = event.results[0][0].transcript;
+      userInput.value = transcript;
+      handleUserReply();
+    };
+
+    recognition.onerror = recognition.onend = function() {
+      isListening = false;
+      micBtn.classList.remove("listening");
+      micBtn.textContent = "🎤 SPEAK";
+    };
+  } else {
+    micBtn.disabled = true;
+    micBtn.textContent = "🎤 NO VOICE";
+  }
+
+  function toggleSpeechRecognition() {
+    if (!recognition) return;
+    if (isListening) recognition.stop();
+    else recognition.start();
+  }
+
+  // Text To Speech (Tutor Voice)
+  function speakText(text) {
+    if (!ttsEnabled || !('speechSynthesis' in window)) return;
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'en-US';
+    utterance.rate = 0.88; // Slightly slower for language learners
+    window.speechSynthesis.speak(utterance);
+  }
+
+  function toggleTTS() {
+    ttsEnabled = !ttsEnabled;
+    document.getElementById("tts-btn").textContent = ttsEnabled ? "🔊 TUTOR VOICE: ON" : "🔇 TUTOR VOICE: OFF";
+    if (!ttsEnabled) window.speechSynthesis.cancel();
+  }
+
+  // Webcam Toggle
+  async function toggleWebcam() {
+    const videoEl = document.getElementById("webcam-view");
+    const camBtn = document.getElementById("cam-btn");
+
+    if (webcamStream) {
+      webcamStream.getTracks().forEach(track => track.stop());
+      webcamStream = null;
+      videoEl.srcObject = null;
+      camBtn.textContent = "📷 START WEBCAM";
+    } else {
+      try {
+        webcamStream = await navigator.mediaDevices.getUserMedia({ video: true });
+        videoEl.srcObject = webcamStream;
+        camBtn.textContent = "🛑 STOP WEBCAM";
+      } catch (err) {
+        alert("Could not access camera. Please check browser permissions.");
+      }
+    }
+  }
+
+  function appendMessage(sender, text) {
+    const msgDiv = document.createElement("div");
+    msgDiv.className = "msg " + (sender === "user" ? "user-msg" : "bot-msg");
+    msgDiv.textContent = text;
+    chatBox.appendChild(msgDiv);
+    chatBox.scrollTop = chatBox.scrollHeight;
+
+    if (sender === "bot") {
+      speakText(text);
+    }
+  }
+
+  function updateHUD() {
+    document.getElementById("q-idx").textContent = Math.min(currentIdx + 1, FRIENDLY_LESSONS.length);
+    document.getElementById("score-val").textContent = score;
+  }
+
+  function handleUserReply() {
+    const text = userInput.value.trim();
+    if (!text) return;
+
+    appendMessage("user", text);
+    userInput.value = "";
+
+    const currentQ = FRIENDLY_LESSONS[currentIdx];
+    const cleanedText = text.toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, "").trim();
+    
+    // Check if reply contains relevant target keywords
+    const isUnderstood = currentQ.coreKeywords.some(kw => cleanedText.includes(kw));
+
+    attemptsOnCurrent++;
+
+    if (isUnderstood || cleanedText.length >= 3) {
+      score += 10;
+      updateHUD();
+      appendMessage("bot", currentQ.explanation);
+
+      currentIdx++;
+      attemptsOnCurrent = 0;
+
+      setTimeout(() => {
+        if (currentIdx < FRIENDLY_LESSONS.length) {
+          updateHUD();
+          appendMessage("bot", FRIENDLY_LESSONS[currentIdx].question);
+        } else {
+          showFinalReport();
+        }
+      }, 1800);
+
+    } else {
+      setTimeout(() => {
+        appendMessage("bot", currentQ.followUpHint);
+      }, 800);
+    }
+  }
+
+  function showFinalReport() {
+    document.getElementById("input-area").style.display = "none";
+
+    const reportCard = document.createElement("div");
+    reportCard.className = "report-card";
+    reportCard.innerHTML = `
+      <h2>🌟 GREAT JOB TALKING TODAY!</h2>
+      <p>You practiced talking about your needs and feelings in English!</p>
+      <div class="grade-badge">A+</div>
+      <p><b>Stars Earned:</b> ${score} ⭐</p>
+      <br>
+      <button onclick="location.reload()">TALK AGAIN</button>
+    `;
+    chatBox.appendChild(reportCard);
+    chatBox.scrollTop = chatBox.scrollHeight;
+    speakText("Great job talking today! You did an awesome job practicing English!");
+  }
+
+  userInput.addEventListener("keydown", function(e) {
+    if (e.key === "Enter") handleUserReply();
+  });
+
+  // Start initial greeting
+  appendMessage("bot", FRIENDLY_LESSONS[0].question);
+</script>
+</body>
+</html>
