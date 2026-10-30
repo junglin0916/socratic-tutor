@@ -6,94 +6,92 @@
   <title>Caring Socratic Tutor - Grade 7 English</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-    body { background: #0c0f1d; color: #e2e8f0; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 16px; }
+    body { background: #0c0f1d; color: #e2e8f0; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 12px; }
     
-    #app-layout { display: flex; gap: 16px; width: 100%; max-width: 980px; height: 640px; }
+    #app-layout { display: flex; flex-direction: column; width: 100%; max-width: 900px; height: 92vh; gap: 10px; }
 
-    /* Control Panel */
-    #media-panel {
-      width: 260px; background: #151c2e; border: 2px solid #2e3b5e; border-radius: 12px;
-      padding: 16px; display: flex; flex-direction: column; align-items: center; gap: 10px;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    /* Top Compact Control Bar */
+    #top-bar {
+      background: #151c2e; border: 2px solid #2e3b5e; border-radius: 12px;
+      padding: 10px 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;
     }
-    #webcam-view { width: 100%; height: 160px; background: #0c0f1d; border: 2px dashed #475569; border-radius: 8px; object-fit: cover; }
-    
-    .media-btn {
-      width: 100%; padding: 10px; font-size: 13px; font-weight: bold; border-radius: 6px;
+    .hud-info { font-size: 18px; font-weight: bold; color: #f8fafc; }
+    .hud-highlight { color: #f59e0b; }
+    .hud-time { color: #38bdf8; }
+
+    .ctrl-group { display: flex; gap: 8px; align-items: center; }
+    .top-btn {
+      padding: 8px 14px; font-size: 14px; font-weight: bold; border-radius: 6px;
       border: 1px solid #475569; background: #2e3b5e; color: #f8fafc; cursor: pointer; transition: 0.2s;
     }
-    .media-btn:hover { background: #38bdf8; color: #0c0f1d; }
+    .top-btn:hover { background: #38bdf8; color: #0c0f1d; }
 
-    /* Tutor Chat Window */
+    /* Main Chat Window */
     #tutor-container {
       flex: 1; background: #151c2e; border: 2px solid #2e3b5e; border-radius: 12px;
       display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.5);
     }
 
-    #tutor-header {
-      padding: 12px 20px; background: #1e293b; border-bottom: 2px solid #2e3b5e;
-      display: flex; justify-content: space-between; align-items: center;
-    }
-    #tutor-title { font-size: 16px; font-weight: bold; color: #38bdf8; }
-    .stat-val { color: #f59e0b; font-weight: bold; }
-    .timer-val { color: #38bdf8; font-weight: bold; }
+    #chat-box { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; background: #0c0f1d; }
 
-    #chat-box { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; background: #0c0f1d; }
-
-    .msg { max-width: 85%; padding: 12px 16px; border-radius: 10px; font-size: 15px; line-height: 1.5; }
+    /* Larger Message Bubbles & Fonts */
+    .msg { max-width: 88%; padding: 14px 20px; border-radius: 12px; font-size: 19px; line-height: 1.5; }
     .bot-msg { background: #1e293b; color: #f8fafc; border: 1px solid #2e3b5e; align-self: flex-start; border-bottom-left-radius: 2px; }
-    .user-msg { background: #0284c7; color: #ffffff; align-self: flex-end; border-bottom-right-radius: 2px; }
+    .user-msg { background: #0284c7; color: #ffffff; align-self: flex-end; border-bottom-right-radius: 2px; font-weight: 600; }
 
-    #input-area { padding: 14px 20px; background: #1e293b; border-top: 2px solid #2e3b5e; display: flex; gap: 10px; align-items: center; }
-    #user-input { flex: 1; padding: 12px; font-size: 15px; border: 2px solid #475569; background: #151c2e; color: #f8fafc; border-radius: 8px; outline: none; }
+    /* Input Controls */
+    #input-area { padding: 12px 16px; background: #1e293b; border-top: 2px solid #2e3b5e; display: flex; gap: 10px; align-items: center; }
+    #user-input { flex: 1; padding: 14px 18px; font-size: 18px; border: 2px solid #475569; background: #151c2e; color: #f8fafc; border-radius: 8px; outline: none; }
     #user-input:focus { border-color: #38bdf8; }
     
-    button { background: #0284c7; color: #ffffff; font-weight: 600; border: none; padding: 10px 18px; font-size: 14px; cursor: pointer; border-radius: 8px; transition: background 0.2s; }
-    button:hover { background: #0369a1; }
+    button.action-btn { background: #0284c7; color: #ffffff; font-weight: bold; border: none; padding: 14px 24px; font-size: 18px; cursor: pointer; border-radius: 8px; transition: background 0.2s; }
+    button.action-btn:hover { background: #0369a1; }
 
-    #mic-btn { background: #d97706; border: 1px solid #f59e0b; }
+    #mic-btn { background: #d97706; border: 1px solid #f59e0b; color: #fff; font-weight: bold; padding: 14px 20px; font-size: 18px; border-radius: 8px; cursor: pointer; }
     #mic-btn.listening { background: #ef4444; border-color: #f87171; animation: pulse 1s infinite; }
 
     @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
 
-    .form-box { background: #151c2e; border: 2px solid #38bdf8; border-radius: 10px; padding: 20px; text-align: center; margin: auto; width: 90%; }
-    .form-group { display: flex; gap: 8px; justify-content: center; margin: 14px 0; }
-    .input-field { padding: 10px; font-size: 14px; border: 1px solid #475569; background: #0c0f1d; color: #f8fafc; border-radius: 6px; text-align: center; }
+    .form-box { background: #151c2e; border: 2px solid #38bdf8; border-radius: 12px; padding: 24px; text-align: center; margin: auto; width: 92%; }
+    .form-box h2 { font-size: 26px; color: #38bdf8; margin-bottom: 12px; }
+    .form-box p { font-size: 18px; color: #cbd5e1; margin-bottom: 16px; }
+    .form-group { display: flex; gap: 10px; justify-content: center; margin: 16px 0; }
+    .input-field { padding: 12px; font-size: 18px; border: 1px solid #475569; background: #0c0f1d; color: #f8fafc; border-radius: 8px; text-align: center; width: 30%; }
+
+    .hidden { display: none !important; }
+    #webcam-view { width: 120px; height: 75px; background: #0c0f1d; border: 1px solid #475569; border-radius: 6px; object-fit: cover; display: none; }
   </style>
 </head>
 <body>
 
 <div id="app-layout">
-  <div id="media-panel">
-    <video id="webcam-view" autoplay playsinline muted></video>
-    <button class="media-btn" id="cam-btn" onclick="toggleWebcam()">📷 START WEBCAM</button>
-    <button class="media-btn" id="tts-btn" onclick="toggleTTS()">🔊 TUTOR VOICE: ON</button>
-    <div style="font-size: 12px; color: #94a3b8; text-align: center; margin-top: auto; line-height: 1.4;">
-      ⏰ <b>2-Minute Session</b><br>Talk to your tutor in English!
+  <!-- Compact Top Bar -->
+  <div id="top-bar">
+    <div class="hud-info">
+      ⏰ <span id="timer-val" class="hud-time">02:00</span> | 
+      ⭐ STARS: <span id="score-val" class="hud-highlight">0</span>
+    </div>
+    <div class="ctrl-group">
+      <video id="webcam-view" autoplay playsinline muted></video>
+      <button class="top-btn" id="cam-btn" onclick="toggleWebcam()">📷 WEBCAM</button>
+      <button class="top-btn" id="tts-btn" onclick="toggleTTS()">🔊 VOICE: ON</button>
     </div>
   </div>
 
+  <!-- Tutor Main Panel -->
   <div id="tutor-container">
-    <div id="tutor-header">
-      <div id="tutor-title">🤝 Socratic Tutor</div>
-      <div>
-        ⏰ TIME: <span id="timer-val" class="timer-val">02:00</span> | 
-        ⭐ STARS: <span id="score-val" class="stat-val">0</span>
-      </div>
-    </div>
-
     <div id="chat-box"></div>
 
     <div id="input-area" class="hidden">
       <button id="mic-btn" onclick="toggleSpeechRecognition()">🎤 SPEAK</button>
-      <input type="text" id="user-input" placeholder="Say something in English..." autocomplete="off">
-      <button id="send-btn" onclick="handleUserReply()">SEND</button>
+      <input type="text" id="user-input" placeholder="Type or speak in English..." autocomplete="off">
+      <button class="action-btn" onclick="handleUserReply()">SEND</button>
     </div>
   </div>
 </div>
 
 <script>
-  // Google Apps Script URL for Leaderboard integration
+  // Google Apps Script Web App URL (Optional)
   const LEADERBOARD_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbweupbTyu0WbLlOFFHGP9FuieboEVWYfFHMHKoUDQsEfB6EQFL3-U4PWHUZyH7v3FBfOQ/exec";
 
   let studentProfile = { name: "", className: "", seatNum: "" };
@@ -113,51 +111,75 @@
   const TUTOR_STEPS = [
     {
       topic: "Greeting & Warmup",
-      question: "Hello! What is your name, and how are you feeling today?",
+      question: "Hello! 👋 What is your name, and how are you feeling today?",
       evaluate: (text) => {
-        if (text.length < 2) return { pass: false, reply: "Can you tell me your name or how you feel?" };
-        return { pass: true, reply: "Nice to meet you! It's so good to talk with you today 😊" };
+        const lower = text.toLowerCase().trim();
+        if (lower.includes("blah") || lower.length < 2) {
+          return { pass: false, reply: "I didn't quite catch that! Try saying: 'I am happy' or 'I am tired'. How do you feel?" };
+        }
+        if (lower.includes("fine") || lower.includes("good") || lower.includes("happy") || lower.includes("tired")) {
+          if (!lower.includes("i am") && !lower.includes("i'm")) {
+            return { pass: true, reply: "I understand! A full sentence sounds even better: 'I am " + text + ".' Great start! 😊" };
+          }
+          return { pass: true, reply: "Awesome! It's so good to talk with you today 😊" };
+        }
+        return { pass: true, reply: "Nice to meet you! Thank you for telling me how you feel!" };
       }
     },
     {
       topic: "Polite Request (Needs)",
       question: "Imagine you are thirsty in class and want water. How do you ask nicely? (Hint: Use 'Please...')",
       evaluate: (text) => {
-        const lower = text.toLowerCase();
-        if (lower.includes("please") || lower.includes("water") || lower.includes("drink")) {
-          return { pass: true, reply: "Awesome! Saying 'Please' or 'Water, please' is super polite! 👍" };
+        const lower = text.toLowerCase().trim();
+        if (lower.includes("blah") || lower.length < 2) {
+          return { pass: false, reply: "Try making a request! Say: 'Please give me water.'" };
         }
-        if (lower.includes("game") || lower.includes("play") || lower.includes("dog") || lower.includes("sleep")) {
-          return { pass: false, reply: "Haha, that sounds fun! But if you are thirsty, try saying: 'Please give me water!'. Can you try?" };
+        if (lower.includes("please") && (lower.includes("water") || lower.includes("give") || lower.includes("drink"))) {
+          return { pass: true, reply: "Perfect English! Adding 'Please' makes your request polite! 👍" };
         }
-        return { pass: false, reply: "Try using the word 'Please'! For example: 'Please give me water'." };
+        if (lower.includes("water") || lower.includes("drink")) {
+          return { pass: false, reply: "You got the right word! Now add 'Please' to make it polite: 'Please give me water!'" };
+        }
+        return { pass: false, reply: "Let's practice! Try saying: 'Please give me water.'" };
       }
     },
     {
       topic: "Food Suggestion (Let's)",
-      question: "You and your friend are hungry after school! How do you suggest eating together? (Hint: 'Let's eat...')",
+      question: "You and your friend are hungry after school! How do you suggest eating together? (Hint: Start with 'Let's eat...')",
       evaluate: (text) => {
-        const lower = text.toLowerCase();
-        if (lower.includes("let's") || lower.includes("lets") || lower.includes("eat") || lower.includes("tea") || lower.includes("bento")) {
-          return { pass: true, reply: "Yum! 'Let's eat...' is a great way to make plans with friends!" };
+        const lower = text.toLowerCase().trim();
+        if (lower.includes("blah") || lower.length < 2) {
+          return { pass: false, reply: "Start your sentence with 'Let's eat...'!" };
         }
-        return { pass: false, reply: "Try starting with 'Let's eat...'! For example: 'Let's eat bento!' or 'Let's drink boba tea!'" };
+        if (lower.includes("let's") || lower.includes("lets")) {
+          return { pass: true, reply: "Yum! 'Let's eat...' is a great pattern to invite your friends!" };
+        }
+        if (lower.includes("bento") || lower.includes("rice") || lower.includes("tea") || lower.includes("boba") || lower.includes("noodle")) {
+          return { pass: false, reply: "Sounds delicious! Add 'Let's' to the front: 'Let's eat " + text + "!' Try saying that!" };
+        }
+        return { pass: false, reply: "Try starting with 'Let's eat...'! For example: 'Let's eat bento!'" };
       }
     },
     {
       topic: "Classroom Care (Imperatives)",
       question: "Your friend is running fast in class and might fall down. What warning can you tell them? (Hint: 'Don't...')",
       evaluate: (text) => {
-        const lower = text.toLowerCase();
-        if (lower.includes("don't") || lower.includes("dont") || lower.includes("run") || lower.includes("careful") || lower.includes("stop")) {
-          return { pass: true, reply: "Great caring job! Saying 'Don't run' or 'Be careful' keeps everyone safe! ❤️" };
+        const lower = text.toLowerCase().trim();
+        if (lower.includes("blah") || lower.length < 2) {
+          return { pass: false, reply: "Try warning them! Use 'Don't...' or 'Be careful!'." };
+        }
+        if (lower.includes("don't") || lower.includes("dont") || lower.includes("stop") || lower.includes("careful")) {
+          return { pass: true, reply: "Great job caring for your friend! 'Don't run' keeps everyone safe! ❤️" };
+        }
+        if (lower.includes("run")) {
+          return { pass: false, reply: "Close! Put 'Don't' in front to tell them NOT to run: 'Don't run!'. Try that!" };
         }
         return { pass: false, reply: "You can say: 'Don't run!' or 'Be careful!'. Give it a try!" };
       }
     }
   ];
 
-  // Initialize Speech Recognition
+  // Speech Recognition
   if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     recognition = new SpeechRecognition();
@@ -186,7 +208,7 @@
 
   function toggleTTS() {
     ttsEnabled = !ttsEnabled;
-    document.getElementById("tts-btn").textContent = ttsEnabled ? "🔊 TUTOR VOICE: ON" : "🔇 TUTOR VOICE: OFF";
+    document.getElementById("tts-btn").textContent = ttsEnabled ? "🔊 VOICE: ON" : "🔇 VOICE: OFF";
     if (!ttsEnabled) window.speechSynthesis.cancel();
   }
 
@@ -195,13 +217,13 @@
     const camBtn = document.getElementById("cam-btn");
     if (webcamStream) {
       webcamStream.getTracks().forEach(t => t.stop());
-      webcamStream = null; videoEl.srcObject = null;
-      camBtn.textContent = "📷 START WEBCAM";
+      webcamStream = null; videoEl.style.display = "none";
+      camBtn.textContent = "📷 WEBCAM";
     } else {
       try {
         webcamStream = await navigator.mediaDevices.getUserMedia({ video: true });
-        videoEl.srcObject = webcamStream;
-        camBtn.textContent = "🛑 STOP WEBCAM";
+        videoEl.srcObject = webcamStream; videoEl.style.display = "block";
+        camBtn.textContent = "🛑 STOP CAM";
       } catch (e) { alert("Camera access blocked."); }
     }
   }
@@ -218,14 +240,14 @@
   function renderStudentForm() {
     chatBox.innerHTML = `
       <div class="form-box">
-        <h3>👋 Welcome Student!</h3>
-        <p>Please enter your information to start talking with the tutor:</p>
+        <h2>👋 Welcome Student!</h2>
+        <p>Please enter your information to start practice:</p>
         <div class="form-group">
           <input type="text" id="stu-name" class="input-field" placeholder="Name" required>
           <input type="text" id="stu-class" class="input-field" placeholder="Class (e.g. 701)">
           <input type="text" id="stu-seat" class="input-field" placeholder="Seat #">
         </div>
-        <button onclick="startSession()">START TALKING</button>
+        <button class="action-btn" onclick="startSession()">START TALKING</button>
       </div>
     `;
   }
@@ -296,20 +318,16 @@
       accuracy: isTimeOut ? "Time Expired" : "100% Complete"
     };
 
-    // Save locally
     try {
       let localData = JSON.parse(localStorage.getItem("tutor_scores") || "[]");
       localData.push(payload);
       localStorage.setItem("tutor_scores", JSON.stringify(localData));
     } catch(e) {}
 
-    // Post to Google Apps Script Leaderboard
     try {
       if (LEADERBOARD_WEBAPP_URL !== "PASTE_YOUR_GOOGLE_APPS_SCRIPT_URL_HERE") {
         await fetch(LEADERBOARD_WEBAPP_URL, {
-          method: "POST",
-          mode: "no-cors",
-          headers: { "Content-Type": "text/plain" },
+          method: "POST", mode: "no-cors", headers: { "Content-Type": "text/plain" },
           body: JSON.stringify(payload)
         });
       }
@@ -320,10 +338,10 @@
     reportCard.innerHTML = `
       <h2>🎓 SESSION COMPLETE!</h2>
       <p>Great job practicing English today, <b>${studentProfile.name}</b>!</p>
-      <h1 style="color:#f59e0b; font-size: 42px; margin: 10px 0;">⭐ ${score} Stars</h1>
-      <p>Score saved to Leaderboard (Class ${studentProfile.className}, Seat ${studentProfile.seatNum}).</p>
+      <h1 style="color:#f59e0b; font-size: 48px; margin: 12px 0;">⭐ ${score} Stars</h1>
+      <p>Score saved (Class ${studentProfile.className}, Seat ${studentProfile.seatNum}).</p>
       <br>
-      <button onclick="renderStudentForm()">TALK AGAIN</button>
+      <button class="action-btn" onclick="renderStudentForm()">TALK AGAIN</button>
     `;
     chatBox.appendChild(reportCard);
     chatBox.scrollTop = chatBox.scrollHeight;
@@ -332,7 +350,6 @@
 
   userInput.addEventListener("keydown", (e) => { if (e.key === "Enter") handleUserReply(); });
 
-  // Initial load
   renderStudentForm();
 </script>
 </body>
