@@ -52,11 +52,19 @@
 
     @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
 
-    .form-box { background: #151c2e; border: 2px solid #38bdf8; border-radius: 12px; padding: 24px; text-align: center; margin: auto; width: 92%; }
+    .form-box { background: #151c2e; border: 2px solid #38bdf8; border-radius: 12px; padding: 24px; text-align: center; margin: auto; width: 92%; max-width: 600px; }
     .form-box h2 { font-size: 26px; color: #38bdf8; margin-bottom: 12px; }
     .form-box p { font-size: 18px; color: #cbd5e1; margin-bottom: 16px; }
     .form-group { display: flex; gap: 10px; justify-content: center; margin: 16px 0; }
     .input-field { padding: 12px; font-size: 18px; border: 1px solid #475569; background: #0c0f1d; color: #f8fafc; border-radius: 8px; text-align: center; width: 30%; }
+
+    /* Leaderboard Styling */
+    #leaderboard-box {
+      width: 100%; margin: 12px 0; background: #0c0f1d; border: 1px solid #2e3b5e; border-radius: 8px; max-height: 180px; overflow-y: auto;
+    }
+    table { width: 100%; border-collapse: collapse; font-size: 15px; text-align: center; }
+    th { background: #1e293b; color: #38bdf8; padding: 8px; border-bottom: 1px solid #2e3b5e; position: sticky; top: 0; }
+    td { padding: 6px; border-bottom: 1px solid #1e293b; color: #e2e8f0; }
 
     .hidden { display: none !important; }
     #webcam-view { width: 120px; height: 75px; background: #0c0f1d; border: 1px solid #475569; border-radius: 6px; object-fit: cover; display: none; }
@@ -91,6 +99,8 @@
 </div>
 
 <script>
+  const LEADERBOARD_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbweupbTyu0WbLlOFFHGP9FuieboEVWYfFHMHKoUDQsEfB6EQFL3-U4PWHUZyH7v3FBfOQ/exec";
+
   let studentProfile = { name: "", className: "", seatNum: "" };
   let secretTargetNumber = 0;
   let guessCount = 0;
@@ -104,6 +114,33 @@
   const chatBox = document.getElementById("chat-box");
   const userInput = document.getElementById("user-input");
   const micBtn = document.getElementById("mic-btn");
+
+  // Leaderboard Renderer
+  function renderLeaderboardTable() {
+    let scores = JSON.parse(localStorage.getItem("guess_game_scores") || "[]");
+    if (scores.length === 0) {
+      return `<p style="font-size:14px; color:#94a3b8; margin:8px 0;">No high scores yet. Be the first to play!</p>`;
+    }
+    let rowsHtml = scores.slice(0, 5).map((s, idx) => `
+      <tr>
+        <td style="color:#f59e0b; font-weight:bold;">#${idx + 1}</td>
+        <td><b>${s.name}</b></td>
+        <td>${s.className}</td>
+        <td style="color:#38bdf8; font-weight:bold;">🎯 ${s.guesses} guesses (${s.score} pts)</td>
+      </tr>
+    `).join("");
+
+    return `
+      <div id="leaderboard-box">
+        <table>
+          <thead>
+            <tr><th>Rank</th><th>Name</th><th>Class</th><th>Performance</th></tr>
+          </thead>
+          <tbody>${rowsHtml}</tbody>
+        </table>
+      </div>
+    `;
+  }
 
   // Speech Recognition Setup
   if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
@@ -176,7 +213,10 @@
     chatBox.innerHTML = `
       <div class="form-box">
         <h2>🚀 Number Guessing Game</h2>
-        <p>Binary Search Challenge: Guess the secret number from <b>1 to 500</b>!</p>
+        <p style="font-size:15px; color:#f59e0b; margin-top:2px;">🏆 Hall of Fame Leaderboard</p>
+        ${renderLeaderboardTable()}
+
+        <p style="font-size:16px; margin-top:10px;">Guess the secret number from <b>1 to 500</b>!</p>
         <div class="form-group">
           <input type="text" id="stu-name" class="input-field" placeholder="Name" required>
           <input type="text" id="stu-class" class="input-field" placeholder="Class (e.g. 701)">
@@ -194,7 +234,6 @@
 
     studentProfile = { name, className, seatNum };
 
-    // Scratch logic: pick random 1 to 500
     secretTargetNumber = Math.floor(Math.random() * 500) + 1;
     guessCount = 0;
     timeLeft = 120;
@@ -227,7 +266,6 @@
     appendMessage("user", `I guess ${val}`);
     userInput.value = "";
 
-    // Scratch Binary Search Logic
     if (val > secretTargetNumber) {
       appendMessage("bot", "Too big! 📈 Try a smaller number.");
     } else if (val < secretTargetNumber) {
@@ -238,9 +276,41 @@
     }
   }
 
-  function finishSession(isTimeOut) {
+  async function finishSession(isTimeOut) {
     clearInterval(timerInterval);
     document.getElementById("input-area").classList.add("hidden");
+
+    // Efficiency Score calculation
+    const calculatedScore = isTimeOut ? 0 : Math.max(10, 100 - (guessCount * 10));
+
+    const payload = {
+      name: studentProfile.name,
+      className: studentProfile.className,
+      seatNum: studentProfile.seatNum,
+      guesses: guessCount,
+      score: calculatedScore,
+      target: secretTargetNumber,
+      date: new Date().toLocaleDateString()
+    };
+
+    // Save locally
+    try {
+      let localScores = JSON.parse(localStorage.getItem("guess_game_scores") || "[]");
+      localScores.push(payload);
+      localScores.sort((a, b) => b.score - a.score || a.guesses - b.guesses);
+      localStorage.setItem("guess_game_scores", JSON.stringify(localScores));
+    } catch(e) {}
+
+    // Push to Google Sheets Web App
+    try {
+      if (LEADERBOARD_WEBAPP_URL) {
+        await fetch(LEADERBOARD_WEBAPP_URL, {
+          method: "POST", mode: "no-cors",
+          headers: { "Content-Type": "text/plain" },
+          body: JSON.stringify(payload)
+        });
+      }
+    } catch(e) {}
 
     const reportCard = document.createElement("div");
     reportCard.className = "form-box";
@@ -249,19 +319,23 @@
       reportCard.innerHTML = `
         <h2>⏰ TIME EXPIRED!</h2>
         <p>The secret number was <b>${secretTargetNumber}</b>.</p>
-        <p>You made <b>${guessCount}</b> guesses.</p>
+        <p>Total Guesses: <b>${guessCount}</b></p>
         <br>
-        <button class="action-btn" onclick="renderStudentForm()">PLAY AGAIN</button>
+        <h3>📊 Current Leaderboard</h3>
+        ${renderLeaderboardTable()}
+        <button class="action-btn" style="margin-top:10px;" onclick="renderStudentForm()">PLAY AGAIN</button>
       `;
       speakText(`Time expired! The secret number was ${secretTargetNumber}.`);
     } else {
       reportCard.innerHTML = `
         <h2>🎉 YOU WON!</h2>
         <p>Target Number: <b>${secretTargetNumber}</b></p>
-        <h1 style="color:#f59e0b; font-size: 40px; margin: 12px 0;">🎯 Guesses: ${guessCount}</h1>
-        <p>Great binary search strategies, <b>${studentProfile.name}</b>!</p>
+        <h1 style="color:#f59e0b; font-size: 38px; margin: 8px 0;">🎯 ${guessCount} Guesses (${calculatedScore} pts)</h1>
+        <p>Great binary search logic, <b>${studentProfile.name}</b>!</p>
         <br>
-        <button class="action-btn" onclick="renderStudentForm()">PLAY AGAIN</button>
+        <h3>📊 Current Leaderboard</h3>
+        ${renderLeaderboardTable()}
+        <button class="action-btn" style="margin-top:10px;" onclick="renderStudentForm()">PLAY AGAIN</button>
       `;
       speakText(`You won in ${guessCount} guesses! Great job!`);
     }
