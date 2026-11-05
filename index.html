@@ -110,16 +110,36 @@
   let recognition = null;
   let isListening = false;
   let webcamStream = null;
+  
+  // Active Leaderboard Cache
+  let globalScoreCache = [];
 
   const chatBox = document.getElementById("chat-box");
   const userInput = document.getElementById("user-input");
   const micBtn = document.getElementById("mic-btn");
 
-  // Leaderboard Renderer
+  // Load & Save Leaderboard Records
+  function getScoreRecords() {
+    try {
+      let localScores = JSON.parse(localStorage.getItem("guess_game_scores") || "[]");
+      if (localScores.length > 0) return localScores;
+    } catch(e) {}
+    return globalScoreCache;
+  }
+
+  function saveScoreRecord(payload) {
+    globalScoreCache.push(payload);
+    globalScoreCache.sort((a, b) => b.score - a.score || a.guesses - b.guesses);
+    try {
+      localStorage.setItem("guess_game_scores", JSON.stringify(globalScoreCache));
+    } catch(e) {}
+  }
+
+  // Render Leaderboard Table
   function renderLeaderboardTable() {
-    let scores = JSON.parse(localStorage.getItem("guess_game_scores") || "[]");
+    let scores = getScoreRecords();
     if (scores.length === 0) {
-      return `<p style="font-size:14px; color:#94a3b8; margin:8px 0;">No high scores yet. Be the first to play!</p>`;
+      return `<p style="font-size:14px; color:#94a3b8; margin:8px 0;">No high scores yet. Play a game to set the first score!</p>`;
     }
     let rowsHtml = scores.slice(0, 5).map((s, idx) => `
       <tr>
@@ -266,6 +286,7 @@
     appendMessage("user", `I guess ${val}`);
     userInput.value = "";
 
+    // Scratch Binary Search Logic
     if (val > secretTargetNumber) {
       appendMessage("bot", "Too big! 📈 Try a smaller number.");
     } else if (val < secretTargetNumber) {
@@ -280,7 +301,6 @@
     clearInterval(timerInterval);
     document.getElementById("input-area").classList.add("hidden");
 
-    // Efficiency Score calculation
     const calculatedScore = isTimeOut ? 0 : Math.max(10, 100 - (guessCount * 10));
 
     const payload = {
@@ -293,15 +313,9 @@
       date: new Date().toLocaleDateString()
     };
 
-    // Save locally
-    try {
-      let localScores = JSON.parse(localStorage.getItem("guess_game_scores") || "[]");
-      localScores.push(payload);
-      localScores.sort((a, b) => b.score - a.score || a.guesses - b.guesses);
-      localStorage.setItem("guess_game_scores", JSON.stringify(localScores));
-    } catch(e) {}
+    saveScoreRecord(payload);
 
-    // Push to Google Sheets Web App
+    // Send data to Google Sheets
     try {
       if (LEADERBOARD_WEBAPP_URL) {
         await fetch(LEADERBOARD_WEBAPP_URL, {
