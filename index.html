@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Caring Socratic Tutor - Grade 7 English</title>
+  <title>Number Guessing Game - Binary Search</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
     body { background: #0c0f1d; color: #e2e8f0; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 12px; }
     
     #app-layout { display: flex; flex-direction: column; width: 100%; max-width: 900px; height: 92vh; gap: 10px; }
 
-    /* Top Compact Control Bar */
+    /* Top Control Bar */
     #top-bar {
       background: #151c2e; border: 2px solid #2e3b5e; border-radius: 12px;
       padding: 10px 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;
@@ -26,7 +26,7 @@
     }
     .top-btn:hover { background: #38bdf8; color: #0c0f1d; }
 
-    /* Main Chat Window */
+    /* Main Container */
     #tutor-container {
       flex: 1; background: #151c2e; border: 2px solid #2e3b5e; border-radius: 12px;
       display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.5);
@@ -34,7 +34,7 @@
 
     #chat-box { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; background: #0c0f1d; }
 
-    /* Larger Message Bubbles & Fonts */
+    /* Message Bubbles */
     .msg { max-width: 88%; padding: 14px 20px; border-radius: 12px; font-size: 19px; line-height: 1.5; }
     .bot-msg { background: #1e293b; color: #f8fafc; border: 1px solid #2e3b5e; align-self: flex-start; border-bottom-left-radius: 2px; }
     .user-msg { background: #0284c7; color: #ffffff; align-self: flex-end; border-bottom-right-radius: 2px; font-weight: 600; }
@@ -65,11 +65,11 @@
 <body>
 
 <div id="app-layout">
-  <!-- Compact Top Bar -->
+  <!-- Top Bar -->
   <div id="top-bar">
     <div class="hud-info">
-      ⏰ <span id="timer-val" class="hud-time">02:00</span> | 
-      ⭐ STARS: <span id="score-val" class="hud-highlight">0</span>
+      ⏰ TIME: <span id="timer-val" class="hud-time">02:00</span> | 
+      🎯 GUESSES: <span id="guesses-val" class="hud-highlight">0</span>
     </div>
     <div class="ctrl-group">
       <video id="webcam-view" autoplay playsinline muted></video>
@@ -78,27 +78,24 @@
     </div>
   </div>
 
-  <!-- Tutor Main Panel -->
+  <!-- Game Panel -->
   <div id="tutor-container">
     <div id="chat-box"></div>
 
     <div id="input-area" class="hidden">
       <button id="mic-btn" onclick="toggleSpeechRecognition()">🎤 SPEAK</button>
-      <input type="text" id="user-input" placeholder="Type or speak in English..." autocomplete="off">
-      <button class="action-btn" onclick="handleUserReply()">SEND</button>
+      <input type="number" id="user-input" placeholder="Enter a number (1-500)..." min="1" max="500" autocomplete="off">
+      <button class="action-btn" onclick="handleGuess()">GUESS</button>
     </div>
   </div>
 </div>
 
 <script>
-  // Google Apps Script Web App URL (Optional)
-  const LEADERBOARD_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbweupbTyu0WbLlOFFHGP9FuieboEVWYfFHMHKoUDQsEfB6EQFL3-U4PWHUZyH7v3FBfOQ/exec";
-
   let studentProfile = { name: "", className: "", seatNum: "" };
+  let secretTargetNumber = 0;
+  let guessCount = 0;
   let timeLeft = 120;
   let timerInterval = null;
-  let score = 0;
-  let currentStep = 0;
   let ttsEnabled = true;
   let recognition = null;
   let isListening = false;
@@ -108,78 +105,7 @@
   const userInput = document.getElementById("user-input");
   const micBtn = document.getElementById("mic-btn");
 
-  const TUTOR_STEPS = [
-    {
-      topic: "Greeting & Warmup",
-      question: "Hello! 👋 What is your name, and how are you feeling today?",
-      evaluate: (text) => {
-        const lower = text.toLowerCase().trim();
-        if (lower.includes("blah") || lower.length < 2) {
-          return { pass: false, reply: "I didn't quite catch that! Try saying: 'I am happy' or 'I am tired'. How do you feel?" };
-        }
-        if (lower.includes("fine") || lower.includes("good") || lower.includes("happy") || lower.includes("tired")) {
-          if (!lower.includes("i am") && !lower.includes("i'm")) {
-            return { pass: true, reply: "I understand! A full sentence sounds even better: 'I am " + text + ".' Great start! 😊" };
-          }
-          return { pass: true, reply: "Awesome! It's so good to talk with you today 😊" };
-        }
-        return { pass: true, reply: "Nice to meet you! Thank you for telling me how you feel!" };
-      }
-    },
-    {
-      topic: "Polite Request (Needs)",
-      question: "Imagine you are thirsty in class and want water. How do you ask nicely? (Hint: Use 'Please...')",
-      evaluate: (text) => {
-        const lower = text.toLowerCase().trim();
-        if (lower.includes("blah") || lower.length < 2) {
-          return { pass: false, reply: "Try making a request! Say: 'Please give me water.'" };
-        }
-        if (lower.includes("please") && (lower.includes("water") || lower.includes("give") || lower.includes("drink"))) {
-          return { pass: true, reply: "Perfect English! Adding 'Please' makes your request polite! 👍" };
-        }
-        if (lower.includes("water") || lower.includes("drink")) {
-          return { pass: false, reply: "You got the right word! Now add 'Please' to make it polite: 'Please give me water!'" };
-        }
-        return { pass: false, reply: "Let's practice! Try saying: 'Please give me water.'" };
-      }
-    },
-    {
-      topic: "Food Suggestion (Let's)",
-      question: "You and your friend are hungry after school! How do you suggest eating together? (Hint: Start with 'Let's eat...')",
-      evaluate: (text) => {
-        const lower = text.toLowerCase().trim();
-        if (lower.includes("blah") || lower.length < 2) {
-          return { pass: false, reply: "Start your sentence with 'Let's eat...'!" };
-        }
-        if (lower.includes("let's") || lower.includes("lets")) {
-          return { pass: true, reply: "Yum! 'Let's eat...' is a great pattern to invite your friends!" };
-        }
-        if (lower.includes("bento") || lower.includes("rice") || lower.includes("tea") || lower.includes("boba") || lower.includes("noodle")) {
-          return { pass: false, reply: "Sounds delicious! Add 'Let's' to the front: 'Let's eat " + text + "!' Try saying that!" };
-        }
-        return { pass: false, reply: "Try starting with 'Let's eat...'! For example: 'Let's eat bento!'" };
-      }
-    },
-    {
-      topic: "Classroom Care (Imperatives)",
-      question: "Your friend is running fast in class and might fall down. What warning can you tell them? (Hint: 'Don't...')",
-      evaluate: (text) => {
-        const lower = text.toLowerCase().trim();
-        if (lower.includes("blah") || lower.length < 2) {
-          return { pass: false, reply: "Try warning them! Use 'Don't...' or 'Be careful!'." };
-        }
-        if (lower.includes("don't") || lower.includes("dont") || lower.includes("stop") || lower.includes("careful")) {
-          return { pass: true, reply: "Great job caring for your friend! 'Don't run' keeps everyone safe! ❤️" };
-        }
-        if (lower.includes("run")) {
-          return { pass: false, reply: "Close! Put 'Don't' in front to tell them NOT to run: 'Don't run!'. Try that!" };
-        }
-        return { pass: false, reply: "You can say: 'Don't run!' or 'Be careful!'. Give it a try!" };
-      }
-    }
-  ];
-
-  // Speech Recognition
+  // Speech Recognition Setup
   if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     recognition = new SpeechRecognition();
@@ -187,7 +113,16 @@
     recognition.lang = 'en-US';
 
     recognition.onstart = () => { isListening = true; micBtn.classList.add("listening"); micBtn.textContent = "🎙️ LISTENING..."; };
-    recognition.onresult = (e) => { userInput.value = e.results[0][0].transcript; handleUserReply(); };
+    recognition.onresult = (e) => { 
+      const text = e.results[0][0].transcript;
+      const num = parseInt(text.replace(/[^0-9]/g, ''));
+      if (!isNaN(num)) {
+        userInput.value = num;
+        handleGuess();
+      } else {
+        appendMessage("bot", "Please say a valid number!");
+      }
+    };
     recognition.onerror = recognition.onend = () => { isListening = false; micBtn.classList.remove("listening"); micBtn.textContent = "🎤 SPEAK"; };
   } else {
     micBtn.disabled = true; micBtn.textContent = "🎤 NO VOICE";
@@ -202,7 +137,7 @@
     if (!ttsEnabled || !('speechSynthesis' in window)) return;
     window.speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(text);
-    u.lang = 'en-US'; u.rate = 0.88;
+    u.lang = 'en-US'; u.rate = 0.9;
     window.speechSynthesis.speak(u);
   }
 
@@ -240,32 +175,36 @@
   function renderStudentForm() {
     chatBox.innerHTML = `
       <div class="form-box">
-        <h2>👋 Welcome Student!</h2>
-        <p>Please enter your information to start practice:</p>
+        <h2>🚀 Number Guessing Game</h2>
+        <p>Binary Search Challenge: Guess the secret number from <b>1 to 500</b>!</p>
         <div class="form-group">
           <input type="text" id="stu-name" class="input-field" placeholder="Name" required>
           <input type="text" id="stu-class" class="input-field" placeholder="Class (e.g. 701)">
           <input type="text" id="stu-seat" class="input-field" placeholder="Seat #">
         </div>
-        <button class="action-btn" onclick="startSession()">START TALKING</button>
+        <button class="action-btn" onclick="startSession()">START GAME</button>
       </div>
     `;
   }
 
   function startSession() {
-    const name = document.getElementById("stu-name").value.trim() || "Anonymous";
+    const name = document.getElementById("stu-name").value.trim() || "Player";
     const className = document.getElementById("stu-class").value.trim() || "-";
     const seatNum = document.getElementById("stu-seat").value.trim() || "-";
 
     studentProfile = { name, className, seatNum };
 
+    // Scratch logic: pick random 1 to 500
+    secretTargetNumber = Math.floor(Math.random() * 500) + 1;
+    guessCount = 0;
+    timeLeft = 120;
+
     chatBox.innerHTML = "";
     document.getElementById("input-area").classList.remove("hidden");
-    
-    score = 0; currentStep = 0; timeLeft = 120;
-    startTimer();
+    document.getElementById("guesses-val").textContent = "0";
 
-    appendMessage("bot", TUTOR_STEPS[currentStep].question);
+    startTimer();
+    appendMessage("bot", `Welcome ${name}! I have chosen a secret number between 1 and 500. What is your guess?`);
   }
 
   function startTimer() {
@@ -278,77 +217,60 @@
     }, 1000);
   }
 
-  function handleUserReply() {
-    const text = userInput.value.trim();
-    if (!text || currentStep >= TUTOR_STEPS.length) return;
+  function handleGuess() {
+    const val = parseInt(userInput.value.trim());
+    if (isNaN(val)) return;
 
-    appendMessage("user", text);
+    guessCount++;
+    document.getElementById("guesses-val").textContent = guessCount;
+
+    appendMessage("user", `I guess ${val}`);
     userInput.value = "";
 
-    const step = TUTOR_STEPS[currentStep];
-    const res = step.evaluate(text);
-
-    if (res.pass) {
-      score += 25;
-      document.getElementById("score-val").textContent = score;
-      appendMessage("bot", res.reply);
-
-      currentStep++;
-      setTimeout(() => {
-        if (currentStep < TUTOR_STEPS.length) {
-          appendMessage("bot", TUTOR_STEPS[currentStep].question);
-        } else {
-          finishSession(false);
-        }
-      }, 1800);
+    // Scratch Binary Search Logic
+    if (val > secretTargetNumber) {
+      appendMessage("bot", "Too big! 📈 Try a smaller number.");
+    } else if (val < secretTargetNumber) {
+      appendMessage("bot", "Too small! 📉 Try a larger number.");
     } else {
-      setTimeout(() => { appendMessage("bot", res.reply); }, 800);
+      appendMessage("bot", "Welcome to Mars! 🚀 You found the correct number!");
+      setTimeout(() => finishSession(false), 1200);
     }
   }
 
-  async function finishSession(isTimeOut) {
+  function finishSession(isTimeOut) {
     clearInterval(timerInterval);
     document.getElementById("input-area").classList.add("hidden");
 
-    const payload = {
-      name: studentProfile.name,
-      className: studentProfile.className,
-      seatNum: studentProfile.seatNum,
-      score: score,
-      accuracy: isTimeOut ? "Time Expired" : "100% Complete"
-    };
-
-    try {
-      let localData = JSON.parse(localStorage.getItem("tutor_scores") || "[]");
-      localData.push(payload);
-      localStorage.setItem("tutor_scores", JSON.stringify(localData));
-    } catch(e) {}
-
-    try {
-      if (LEADERBOARD_WEBAPP_URL !== "PASTE_YOUR_GOOGLE_APPS_SCRIPT_URL_HERE") {
-        await fetch(LEADERBOARD_WEBAPP_URL, {
-          method: "POST", mode: "no-cors", headers: { "Content-Type": "text/plain" },
-          body: JSON.stringify(payload)
-        });
-      }
-    } catch(e) {}
-
     const reportCard = document.createElement("div");
     reportCard.className = "form-box";
-    reportCard.innerHTML = `
-      <h2>🎓 SESSION COMPLETE!</h2>
-      <p>Great job practicing English today, <b>${studentProfile.name}</b>!</p>
-      <h1 style="color:#f59e0b; font-size: 48px; margin: 12px 0;">⭐ ${score} Stars</h1>
-      <p>Score saved (Class ${studentProfile.className}, Seat ${studentProfile.seatNum}).</p>
-      <br>
-      <button class="action-btn" onclick="renderStudentForm()">TALK AGAIN</button>
-    `;
+
+    if (isTimeOut) {
+      reportCard.innerHTML = `
+        <h2>⏰ TIME EXPIRED!</h2>
+        <p>The secret number was <b>${secretTargetNumber}</b>.</p>
+        <p>You made <b>${guessCount}</b> guesses.</p>
+        <br>
+        <button class="action-btn" onclick="renderStudentForm()">PLAY AGAIN</button>
+      `;
+      speakText(`Time expired! The secret number was ${secretTargetNumber}.`);
+    } else {
+      reportCard.innerHTML = `
+        <h2>🎉 YOU WON!</h2>
+        <p>Target Number: <b>${secretTargetNumber}</b></p>
+        <h1 style="color:#f59e0b; font-size: 40px; margin: 12px 0;">🎯 Guesses: ${guessCount}</h1>
+        <p>Great binary search strategies, <b>${studentProfile.name}</b>!</p>
+        <br>
+        <button class="action-btn" onclick="renderStudentForm()">PLAY AGAIN</button>
+      `;
+      speakText(`You won in ${guessCount} guesses! Great job!`);
+    }
+
     chatBox.appendChild(reportCard);
     chatBox.scrollTop = chatBox.scrollHeight;
-    speakText("Great job practicing English today! Your score has been saved!");
   }
 
-  userInput.addEventListener("keydown", (e) => { if (e.key === "Enter") handleUserReply(); });
+  userInput.addEventListener("keydown", (e) => { if (e.key === "Enter") handleGuess(); });
 
   renderStudentForm();
 </script>
